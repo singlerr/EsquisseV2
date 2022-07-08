@@ -1,0 +1,148 @@
+plugins {
+    id 'net.minecraftforge.gradle' version '5.1.+'
+    id "io.freefair.lombok" version "6.5.0.2"
+
+}
+
+
+group = 'io.github.singlerr'
+version = '1.0-SNAPSHOT'
+
+java {
+    archivesBaseName = 'EsquisseV2'
+    toolchain.languageVersion = JavaLanguageVersion.of(8)
+}
+
+minecraft {
+
+    mappings channel: 'stable', version: '39-1.12'
+
+    runs {
+        client {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+
+
+            property 'forge.logging.console.level', 'debug'
+
+
+            mods {
+                esquissev2 {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+
+            property 'forge.logging.console.level', 'debug'
+
+
+            mods {
+                esquissev2 {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+
+ext.genOutputDir = file("$buildDir/generated-resources")
+
+task generateResourceInfo{
+    def res = file("bin").listFiles().collect{it.name}
+    ext.outputFile = file("$genOutputDir/resources.txt")
+    outputs.file(outputFile)
+    doLast{
+        outputFile.text = res.join(' ')
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+sourceSets.main.output.dir genOutputDir, builtBy: generateResourceInfo
+
+repositories {
+    mavenCentral()
+     flatDir {
+         dir 'libs'
+     }
+}
+
+
+configurations {
+    shade
+    implementation.extendsFrom(shade)
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2860'
+    shade "io.github.singlerr:MediaLibV4:1.0-SNAPSHOT"
+//    shade 'org.javassist:javassist:3.29.0-GA'
+}
+
+jar {
+
+    from(configurations.shade){
+  //      exclude "javassist-3.29.0-GA.jar"
+        into "META-INF/libraries"
+    }
+  //  from { configurations.shade.filter { File f -> f.name.contains("javassist") } .collect { it.isDirectory() ? it : zipTree(it) } }
+    from("bin"){
+        into "resources"
+    }
+    def deps = configurations.shade.collect{it.name}
+  //  deps.remove('javassist-3.29.0-GA.jar')
+
+    deps = deps.join(' ')
+    manifest {
+        attributes([
+                "Specification-Title"     : "esquissev2",
+                "Specification-Vendor"    : "singlerr",
+                "Specification-Version"   : "1", // We are version 1 of ourselves
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : project.jar.archiveVersion,
+                "Implementation-Vendor"   : "singlerr",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                "ContainedDeps" : deps
+        ])
+    }
+}
+tasks.register("copyToMod"){
+    doLast{
+        def file = file("build/libs/${project.name}-${version}.jar")
+        def modFile = new File("C:\\Users\\Singlerr\\AppData\\Roaming\\.minecraft\\mods\\${file.name}")
+
+        if(modFile.exists())
+            modFile.delete()
+
+        def inputStream = new FileInputStream(file)
+
+        def outputStream = new FileOutputStream(modFile)
+
+        int len
+        byte[] buf = new byte[4096]
+
+        while((len = inputStream.read(buf)) != -1)
+            outputStream.write(buf,0,len)
+
+        inputStream.close()
+        outputStream.close()
+
+        println "Successfully copied from ${file.path} to ${modFile.path}"
+    }
+}
+
+tasks.named("build"){
+    finalizedBy("copyToMod")
+}
+
+jar.finalizedBy('reobfJar')
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}

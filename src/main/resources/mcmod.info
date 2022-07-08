@@ -1,0 +1,18 @@
+[
+  {
+    "modid": "EsquisseV2",
+    "name": "EsquisseV2",
+    "description": "A mod for playing video in game.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "updateUrl": "",
+    "authorList": [
+      "singlerr"
+    ],
+    "credits": "",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]
